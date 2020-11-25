@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:bloc_rxdart/bloc/example_bloc.dart';
+import 'package:bloc_rxdart/database/database_helper.dart';
 import 'package:bloc_rxdart/model/eventMessageModel.dart';
 import 'package:bloc_rxdart/model/exampleModel.dart';
 import 'package:bloc_rxdart/utils/utils.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:rxbus/rxbus.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -13,10 +18,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final Connectivity _connectivity = Connectivity();
+  bool isConnect;
+
   @override
   void initState() {
-    blocExample.fetchAllExample();
     _registerBus();
+    initConnectivity();
     super.initState();
   }
 
@@ -102,6 +110,42 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
+  }
+
+  Future<void> initConnectivity() async {
+    ConnectivityResult result;
+    try {
+      result = await _connectivity.checkConnectivity();
+    } on PlatformException catch (e) {
+      print(e.toString());
+    }
+
+    if (!mounted) {
+      return Future.value(null);
+    }
+
+    return _updateConnectionStatus(result);
+  }
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+    switch (result) {
+      case ConnectivityResult.wifi:
+        isConnect = true;
+        blocExample.fetchAllExample(isConnect);
+        break;
+      case ConnectivityResult.mobile:
+        isConnect = true;
+        blocExample.fetchAllExample(isConnect);
+        break;
+      case ConnectivityResult.none:
+        isConnect = false;
+        blocExample.fetchAllExample(isConnect);
+        break;
+      default:
+        isConnect = false;
+        blocExample.fetchAllExample(isConnect);
+        break;
+    }
   }
 
   Future<void> _registerBus() async {
